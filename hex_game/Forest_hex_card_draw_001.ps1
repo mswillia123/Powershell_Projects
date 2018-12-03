@@ -123,13 +123,18 @@ if($("No", "Yes" | ogv -PassThru -Title "Reload google sheet?") -eq "Yes"){
 $foliage = "Forest"
 $terrain = "Mountain"
 $wildness = "Wild"
-$deck = "Location"
+$deck = "Landscape"
+$deck_types = @("Landscape","Location","Common", "Uncommon", "Rare")
 
     while(1){
-        
-        switch($("Draw card","Exit", "Change terrain", "Change foliage", "Change wildness", "Select deck", "Shuffle deck",  "View all cards", `
+        $deck_string = ""
+        foreach($type in $deck_types){
+            $deck_string += "$type`:$( ($cards | ?{$_.deck -eq $type -and $_.additionalcards -ne "Drawn"}).count)/$(($cards | ?{$_.deck -eq $type}).count) "
+        }
+          
+        switch($("Draw card","Exit", "Change terrain", "Change foliage", "Change wildness", "Select deck", "Shuffle deck",  "View deck", "View all cards", `
         "*** Currently: $foliage $terrain $wildness, deck $deck ($(($cards | ?{($_.sourcedeck -eq "$deck" -and $_.deck -ne "discard" -and $_.additionalcards -ne "Drawn")}).count)) ***" `
-         | ogv -PassThru -Title "Select Command"))
+         | ogv -PassThru -Title "Select Command, Current Deck $deck, $deck_string"))
         {
             "Draw card" {
                 $selection = get_card_selection $cards $deck $foliage $terrain $wildness; 
@@ -137,11 +142,12 @@ $deck = "Location"
                 $selected_card.additionalcards = "Drawn"
                 $selected_card | select name, description, type, sourcedeck, count | ogv -PassThru -title "Card draw: $deck $foliage $terrain $wildness"}
             "Exit" {exit}
-            "Select deck" {$deck = @("Landscape","Location","Common", "Uncommon", "Rare") | ogv -PassThru -title "Select deck"}
+            "Select deck" {$deck = $deck_types | ogv -PassThru -title "Select deck"}
             "Shuffle deck" {$cards | % {if($_.additionalcards -eq "Drawn" -and $_.sourcedeck -eq $deck) {$_.additionalcards = ""}}} #THIS IS NOT WORKING YET
             "Change terrain" {$terrain = @("Mountain", "Hill", "Plain") | ogv -PassThru -title "Select new terrain"}
             "Change foliage" {$foliage = @("Forest","Scrub","Grass","Barren") | ogv -PassThru -title "Select new foliage"}
             "Change wildness" {$wildness = @("Wild", "Border", "Settled") | ogv -PassThru -title "Select new wildness"}
+            "View deck" {$cards | ?{$_.deck -eq $deck} | ogv -PassThru -Title "Viewing $deck deck"}
             "View all cards" {$cards | ogv -PassThru -Title "Viewing all cards"}
 
             default {}
